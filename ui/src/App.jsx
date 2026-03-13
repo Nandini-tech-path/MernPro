@@ -26,20 +26,25 @@ const AppLayout = ({ children }) => {
   const { user } = useAuth();
   
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
       <Navbar />
-      {user && <Sidebar />}
-      <Box 
-        component="main" 
-        sx={{ 
-          flexGrow: 1, 
-          p: 3, 
-          width: '100%', 
-          ...(user && { width: `calc(100% - 240px)` }) // Accommodate Sidebar width
-        }}
-      >
-        <Toolbar /> {/* Spacer for Top Navbar */}
-        {children}
+      <Box sx={{ display: 'flex', flexGrow: 1 }}>
+        {user && <Sidebar />}
+        <Box 
+          component="main" 
+          sx={{ 
+            flexGrow: 1, 
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+            ...(user && { width: `calc(100% - 240px)` })
+          }}
+        >
+          <Toolbar />
+          <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
+            {children}
+          </Box>
+        </Box>
       </Box>
     </Box>
   );

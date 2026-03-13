@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper, Container, Fade, MenuItem } from '@mui/material';
+import { 
+  Box, 
+  Button, 
+  TextField, 
+  Typography, 
+  Paper, 
+  Fade, 
+  MenuItem, 
+  Tabs, 
+  Tab,
+  FormControl,
+  InputLabel,
+  Select,
+  Stack
+} from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -7,13 +21,31 @@ const Register = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const [roleTab, setRoleTab] = useState(0); // 0 for Parent, 1 for Admin
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'parent',
+    confirmPassword: '',
+    schoolName: '',
+    customSchoolName: '',
+    childName: '',
+    childClass: '',
   });
   const [error, setError] = useState('');
+
+  const schools = [
+    'Greenwood High',
+    'Oakridge International',
+    'Delhi Public School',
+    'St. Mary\'s Convent',
+    'Other (Add My School)'
+  ];
+
+  const handleTabChange = (event, newValue) => {
+    setRoleTab(newValue);
+    setError('');
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,10 +53,31 @@ const Register = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
-      // Mock registration
-      // const res = await axios.post('/api/auth/register', formData);
-      console.log('Registered with', formData);
+      const finalRole = roleTab === 0 ? 'parent' : 'admin';
+      const finalSchool = formData.schoolName === 'Other (Add My School)' 
+        ? formData.customSchoolName 
+        : formData.schoolName;
+
+      const submissionData = {
+        role: finalRole,
+        email: formData.email,
+        password: formData.password,
+        schoolName: finalSchool,
+        ...(roleTab === 0 && {
+          name: formData.name,
+          childName: formData.childName,
+          childClass: formData.childClass,
+        })
+      };
+
+      console.log('Registered with', submissionData);
       navigate('/login');
     } catch (err) {
       setError('Registration failed.');
@@ -32,99 +85,177 @@ const Register = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs" sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <Fade in={true} timeout={800}>
-        <Paper elevation={3} sx={{ p: 4, width: '100%', borderRadius: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography component="h1" variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: 'primary.main' }}>
-              {t('Register')}
+    <Fade in={true} timeout={800}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: { xs: 4, sm: 6 }, 
+          width: '100%', 
+          maxWidth: '560px',
+          borderRadius: 4,
+          border: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper'
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Box sx={{ mb: 4, textAlign: 'center' }}>
+            <img src="/logo.png" alt="EduTracker Logo" style={{ height: '40px', marginBottom: '16px' }} />
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', letterSpacing: '-0.025em' }}>
+              {t('Create EduTracker Account')}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-              Create an account on EduTracker.
+          </Box>
+          
+          <Tabs 
+            value={roleTab} 
+            onChange={handleTabChange} 
+            variant="fullWidth"
+            sx={{ 
+              mb: 4, 
+              width: '100%', 
+              backgroundColor: 'background.default',
+              borderRadius: '12px',
+              p: 0.5,
+              minHeight: '44px',
+              '& .MuiTabs-indicator': {
+                height: 'calc(100% - 8px)',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                m: '4px'
+              },
+              '& .MuiTab-root': {
+                zIndex: 1,
+                minHeight: '36px',
+                fontSize: '0.875rem',
+                '&.Mui-selected': { color: 'primary.main' }
+              }
+            }}
+          >
+            <Tab label="Parent" />
+            <Tab label="Admin" />
+          </Tabs>
+
+          {error && (
+            <Typography color="error" variant="body2" sx={{ mb: 3, textAlign: 'center' }}>
+              {error}
             </Typography>
+          )}
 
-            {error && (
-              <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-                {error}
-              </Typography>
-            )}
-
-            <Box component="form" onSubmit={handleRegister} sx={{ mt: 1, width: '100%' }}>
+          <Stack component="form" onSubmit={handleRegister} spacing={3} sx={{ width: '100%' }}>
+            {roleTab === 0 && (
               <TextField
-                margin="normal"
                 required
                 fullWidth
-                id="name"
                 label="Full Name"
                 name="name"
-                autoComplete="name"
-                autoFocus
                 value={formData.name}
                 onChange={handleChange}
-                sx={{ mb: 2 }}
               />
+            )}
+
+            <TextField
+              required
+              fullWidth
+              label={t('Email Address')}
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+            />
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label={t('Email')}
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={formData.email}
-                onChange={handleChange}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                margin="normal"
                 required
                 fullWidth
                 name="password"
                 label={t('Password')}
                 type="password"
-                id="password"
                 value={formData.password}
                 onChange={handleChange}
-                sx={{ mb: 2 }}
               />
               <TextField
-                select
-                margin="normal"
                 required
                 fullWidth
-                name="role"
-                label="Role"
-                value={formData.role}
+                name="confirmPassword"
+                label="Confirm Password"
+                type="password"
+                value={formData.confirmPassword}
                 onChange={handleChange}
-                sx={{ mb: 3 }}
-              >
-                <MenuItem value="parent">Parent</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-              </TextField>
+              />
+            </Stack>
 
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                size="large"
-                sx={{ py: 1.5, mb: 2, borderRadius: 2 }}
+            <FormControl fullWidth required>
+              <InputLabel id="school-label">School Name</InputLabel>
+              <Select
+                labelId="school-label"
+                name="schoolName"
+                value={formData.schoolName}
+                label="School Name"
+                onChange={handleChange}
               >
-                {t('Register')}
-              </Button>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="body2">
-                  Already have an account?{' '}
-                  <Link to="/login" style={{ color: '#4F46E5', textDecoration: 'none', fontWeight: 'bold' }}>
-                    {t('Login')}
-                  </Link>
-                </Typography>
-              </Box>
+                {schools.map((school) => (
+                  <MenuItem key={school} value={school}>{school}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {formData.schoolName === 'Other (Add My School)' && (
+              <Fade in={true}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Enter Your School Name"
+                  name="customSchoolName"
+                  value={formData.customSchoolName}
+                  onChange={handleChange}
+                />
+              </Fade>
+            )}
+
+            {roleTab === 0 && (
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Child's Name"
+                  name="childName"
+                  value={formData.childName}
+                  onChange={handleChange}
+                />
+                <TextField
+                  required
+                  fullWidth
+                  label="Child's Class"
+                  name="childClass"
+                  value={formData.childClass}
+                  onChange={handleChange}
+                />
+              </Stack>
+            )}
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              sx={{ py: 1.5, mt: 1, borderRadius: 2, fontSize: '0.95rem' }}
+            >
+              {t('Create Account')}
+            </Button>
+            
+            <Box sx={{ textAlign: 'center', mt: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                {t('Already have an account?')}{' '}
+                <Link to="/login" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>
+                  {t('Sign In')}
+                </Link>
+              </Typography>
             </Box>
-          </Box>
-        </Paper>
-      </Fade>
-    </Container>
+          </Stack>
+        </Box>
+      </Paper>
+    </Fade>
   );
 };
 
