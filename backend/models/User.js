@@ -7,6 +7,13 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
   email: {
     type: String,
     required: true,
@@ -19,10 +26,23 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6
   },
+  schoolName: {
+    type: String,
+    required: true,
+    trim: true
+  },
   role: {
     type: String,
     enum: ['admin', 'parent'],
     default: 'parent'
+  },
+  childName: {
+    type: String,
+    trim: true
+  },
+  childClass: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true

@@ -22,6 +22,8 @@ import ParentDashboard from './pages/ParentDashboard';
 import ViewAttendance from './pages/ViewAttendance';
 import SubmitReport from './pages/SubmitReport';
 
+const SCHOOL_NAME_DEFAULT = 'EduTracker School';
+
 // Main Layout Component
 const AppLayout = ({ children }) => {
   const { user } = useAuth();

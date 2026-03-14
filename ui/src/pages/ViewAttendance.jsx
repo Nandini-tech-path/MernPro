@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
@@ -8,11 +9,22 @@ const ViewAttendance = () => {
   const { t } = useTranslation();
   const dateStr = new Date().toLocaleDateString();
 
-  // Mock Data
-  const [attendance] = useState([
-    { id: 1, name: 'John Doe', subject: 'Mathematics', status: 'Present' },
-    { id: 2, name: 'Jane Smith', subject: 'Science', status: 'Absent' },
-  ]);
+  const [attendance, setAttendance] = useState([]);
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/parent/attendance', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setAttendance(response.data.attendance);
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
+      }
+    };
+    fetchAttendance();
+  }, []);
 
   return (
     <Box>
@@ -36,9 +48,9 @@ const ViewAttendance = () => {
           </TableHead>
           <TableBody>
             {attendance.map((record) => (
-              <TableRow key={record.id} hover>
-                <TableCell>{record.name}</TableCell>
-                <TableCell>{record.subject}</TableCell>
+              <TableRow key={record._id} hover>
+                <TableCell>{record.teacher?.name || 'Unknown'}</TableCell>
+                <TableCell>{record.teacher?.subject || 'Unknown'}</TableCell>
                 <TableCell align="right">
                   <Chip 
                     label={record.status} 

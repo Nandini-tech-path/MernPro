@@ -9,9 +9,11 @@ const router = express.Router();
 // Register route
 router.post('/register', [
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('username').trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('role').optional().isIn(['admin', 'parent']).withMessage('Role must be admin or parent')
+  body('role').optional().isIn(['admin', 'parent']).withMessage('Role must be admin or parent'),
+  body('schoolName').trim().notEmpty().withMessage('School name is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -19,16 +21,16 @@ router.post('/register', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password, role = 'parent' } = req.body;
+    const { name, username, email, password, role = 'parent', schoolName, childName, childClass } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'User with this email or username already exists' });
     }
 
     // Create new user
-    const user = new User({ name, email, password, role });
+    const user = new User({ name, username, email, password, role, schoolName, childName, childClass });
     await user.save();
 
     // Generate JWT token
@@ -45,7 +47,8 @@ router.post('/register', [
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        schoolName: user.schoolName
       }
     });
   } catch (error) {
@@ -56,7 +59,7 @@ router.post('/register', [
 
 // Login route
 router.post('/login', [
-  body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
+  body('username').exists().withMessage('Username is required'),
   body('password').exists().withMessage('Password is required')
 ], async (req, res) => {
   try {
@@ -65,10 +68,10 @@ router.post('/login', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    // Find user
-    const user = await User.findOne({ email });
+    // Find user by username
+    const user = await User.findOne({ username });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -93,7 +96,8 @@ router.post('/login', [
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        schoolName: user.schoolName
       }
     });
   } catch (error) {
@@ -110,7 +114,8 @@ router.get('/profile', auth, async (req, res) => {
         id: req.user._id,
         name: req.user.name,
         email: req.user.email,
-        role: req.user.role
+        role: req.user.role,
+        schoolName: req.user.schoolName
       }
     });
   } catch (error) {

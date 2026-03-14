@@ -22,9 +22,79 @@ router.get('/public/school', async (req, res) => {
   }
 });
 
-// All admin routes require authentication and admin role
+// All authenticated routes (parent and admin)
 router.use(auth);
+
+// All admin routes require authentication and admin role
 router.use(authorize('admin'));
+
+// Dashboard statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const totalTeachers = await Teacher.countDocuments();
+    
+    // Get start of today
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(startOfToday);
+    endOfToday.setDate(endOfToday.getDate() + 1);
+
+    const presentToday = await Attendance.countDocuments({
+      date: { $gte: startOfToday, $lt: endOfToday },
+      status: 'Present'
+    });
+
+    const openReports = await Report.countDocuments({ status: 'Pending' });
+
+    res.json({
+      totalTeachers,
+      presentToday,
+      openReports
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Recent activity feed
+router.get('/recent-activity', async (req, res) => {
+  try {
+    const recentAttendance = await Attendance.find()
+      .populate('teacher', 'name')
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    const recentReports = await Report.find()
+      .populate('parent', 'name')
+      .populate('teacher', 'name')
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    // Merge and format activity
+    const activity = [
+      ...recentAttendance.map(a => ({
+        id: a._id,
+        type: 'attendance',
+        text: `Attendance for ${a.teacher?.name || 'Unknown'} marked as ${a.status}`,
+        date: a.createdAt,
+        status: a.status
+      })),
+      ...recentReports.map(r => ({
+        id: r._id,
+        type: 'report',
+        text: `New report from ${r.parent?.name || 'Unknown'} regarding ${r.teacher?.name || 'Unknown'}`,
+        date: r.createdAt,
+        status: r.status
+      }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+
+    res.json(activity);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // Teacher management routes
 router.get('/teachers', async (req, res) => {
@@ -305,12 +375,15 @@ router.post('/school', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name } = req.body;
+    const { name, notices } = req.body;
 
     // Upsert: update if exists, create if not
+    const updateData = { name };
+    if (notices) updateData.notices = notices;
+
     const school = await School.findOneAndUpdate(
       {},
-      { name },
+      updateData,
       { new: true, upsert: true }
     );
 

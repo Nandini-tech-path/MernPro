@@ -21,7 +21,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const [roleTab, setRoleTab] = useState(0); // 0 for Parent, 1 for Admin
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -33,18 +33,27 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      if (roleTab === 1 && email === 'admin@mail.com') {
-        login({ id: 1, name: 'Admin User', role: 'admin', email }, 'mock-jwt-token-admin');
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      login(data.user, data.token);
+      
+      if (data.user.role === 'admin') {
         navigate('/admin/dashboard');
-      } else if (roleTab === 0 && email === 'parent@mail.com') {
-        login({ id: 2, name: 'Parent User', role: 'parent', email }, 'mock-jwt-token-parent');
-        navigate('/parent/dashboard');
       } else {
-        const roleName = roleTab === 0 ? 'Parent' : 'Admin';
-        setError(`Invalid ${roleName} credentials. Use ${roleTab === 0 ? 'parent@mail.com' : 'admin@mail.com'}`);
+        navigate('/parent/dashboard');
       }
     } catch (err) {
-      setError('Login failed. Please check your credentials.');
+      setError(err.message || 'Login failed. Please check your credentials.');
     }
   };
 
@@ -110,9 +119,9 @@ const Login = () => {
             <TextField
               required
               fullWidth
-              label={t('Email Address')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               variant="outlined"
             />
             <Box>

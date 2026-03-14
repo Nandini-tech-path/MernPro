@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
@@ -8,15 +9,64 @@ const UpdateAttendance = () => {
   const { t } = useTranslation();
   const dateStr = new Date().toLocaleDateString();
 
-  const [attendance, setAttendance] = useState([
-    { id: 1, name: 'John Doe', status: 'Present' },
-    { id: 2, name: 'Jane Smith', status: 'Absent' },
-  ]);
+  const [attendance, setAttendance] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      const teachersRes = await axios.get('http://localhost:5000/api/admin/teachers', config);
+      const attendanceRes = await axios.get('http://localhost:5000/api/admin/attendance', config);
+      
+      // Merge teachers with attendance status
+      const records = teachersRes.data.map(teacher => {
+        const record = attendanceRes.data.find(a => a.teacher._id === teacher._id);
+        return {
+          _id: teacher._id,
+          name: teacher.name,
+          status: record ? record.status : 'Absent',
+          attendanceId: record ? record._id : null
+        };
+      });
+      
+      setAttendance(records);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching attendance data:', error);
+      setLoading(false);
+    }
+  };
 
   const toggleStatus = (id) => {
     setAttendance(attendance.map(t => 
-      t.id === id ? { ...t, status: t.status === 'Present' ? 'Absent' : 'Present' } : t
+      t._id === id ? { ...t, status: t.status === 'Present' ? 'Absent' : 'Present' } : t
     ));
+  };
+
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      await Promise.all(attendance.map(record => 
+        axios.post('http://localhost:5000/api/admin/attendance', {
+          teacherId: record._id,
+          status: record.status
+        }, config)
+      ));
+      
+      alert('Attendance saved successfully!');
+      fetchData();
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      alert('Failed to save attendance.');
+    }
   };
 
   return (
@@ -41,7 +91,7 @@ const UpdateAttendance = () => {
           </TableHead>
           <TableBody>
             {attendance.map((record) => (
-              <TableRow key={record.id} hover>
+              <TableRow key={record._id} hover>
                 <TableCell>{record.name}</TableCell>
                 <TableCell>
                   <Chip 
@@ -55,7 +105,7 @@ const UpdateAttendance = () => {
                   <Button 
                     variant="outlined" 
                     size="small" 
-                    onClick={() => toggleStatus(record.id)}
+                    onClick={() => toggleStatus(record._id)}
                   >
                     Toggle Status
                   </Button>
@@ -67,8 +117,8 @@ const UpdateAttendance = () => {
       </TableContainer>
       
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-        <Button variant="contained" size="large" sx={{ borderRadius: 2 }}>
-          Save Attendance
+        <Button variant="contained" size="large" sx={{ borderRadius: 2 }} onClick={handleSave}>
+          {t('Save Attendance')}
         </Button>
       </Box>
     </Box>

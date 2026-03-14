@@ -1,29 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, TextField, Button, MenuItem, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import SendIcon from '@mui/icons-material/Send';
 
 const SubmitReport = () => {
   const { t } = useTranslation();
 
-  const teachers = [
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Jane Smith' },
-  ];
-
+  const [teachers, setTeachers] = useState([]);
   const [formData, setFormData] = useState({
     teacherId: '',
     issue: ''
   });
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/parent/teachers', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTeachers(response.data.teachers);
+      } catch (error) {
+        console.error('Error fetching teachers:', error);
+      }
+    };
+    fetchTeachers();
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.teacherId && formData.issue) {
-      // Mock submit
-      setSuccess(true);
-      setFormData({ teacherId: '', issue: '' });
-      setTimeout(() => setSuccess(false), 3000);
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post('http://localhost:5000/api/parent/reports', formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSuccess(true);
+        setError('');
+        setFormData({ teacherId: '', issue: '' });
+        setTimeout(() => setSuccess(false), 3000);
+      } catch (err) {
+        console.error('Error submitting report:', err);
+        setError(err.response?.data?.message || 'Failed to submit report. Ensure issue is at least 10 characters.');
+      }
     }
   };
 
@@ -44,6 +66,12 @@ const SubmitReport = () => {
           </Alert>
         )}
 
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
         <Box component="form" onSubmit={handleSubmit}>
           <TextField
             select
@@ -55,7 +83,7 @@ const SubmitReport = () => {
             required
           >
             {teachers.map((teacher) => (
-              <MenuItem key={teacher.id} value={teacher.id}>
+              <MenuItem key={teacher._id} value={teacher._id}>
                 {teacher.name}
               </MenuItem>
             ))}

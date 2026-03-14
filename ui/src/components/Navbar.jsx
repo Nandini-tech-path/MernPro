@@ -74,10 +74,10 @@ const Navbar = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {user.name}
+                  @{user.username || user.name}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
-                  {user.role}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textTransform: 'capitalize' }}>
+                  {user.role} {user.schoolName && `| ${user.schoolName}`}
                 </Typography>
               </Box>
               <Avatar 

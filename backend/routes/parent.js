@@ -11,6 +11,26 @@ const router = express.Router();
 // All parent routes require authentication and parent role
 router.use(auth);
 router.use(authorize('parent'));
+ 
+// Dashboard statistics for parents
+router.get('/stats', async (req, res) => {
+  try {
+    const daysChecked = await Attendance.countDocuments(); // Simplified: all attendance records
+    const reportsFiled = await Report.countDocuments({ parent: req.user._id });
+    
+    const school = await School.findOne();
+    const notices = school ? school.notices : [];
+
+    res.json({
+      daysChecked,
+      reportsFiled,
+      notices
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // View attendance route
 router.get('/attendance', async (req, res) => {

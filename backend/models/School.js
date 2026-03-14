@@ -5,7 +5,11 @@ const schoolSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
-  }
+  },
+  notices: [{
+    type: String,
+    trim: true
+  }]
 }, {
   timestamps: true
 });

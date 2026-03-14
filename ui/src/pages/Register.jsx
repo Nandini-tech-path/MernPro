@@ -24,6 +24,7 @@ const Register = () => {
   const [roleTab, setRoleTab] = useState(0); // 0 for Parent, 1 for Admin
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -66,21 +67,34 @@ const Register = () => {
         : formData.schoolName;
 
       const submissionData = {
-        role: finalRole,
+        name: roleTab === 0 ? formData.name : formData.username, // Using username as name for admin or formal name for parent
+        username: formData.username,
         email: formData.email,
         password: formData.password,
+        role: finalRole,
         schoolName: finalSchool,
         ...(roleTab === 0 && {
-          name: formData.name,
           childName: formData.childName,
           childClass: formData.childClass,
         })
       };
 
-      console.log('Registered with', submissionData);
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submissionData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      console.log('Registered successfully', data);
       navigate('/login');
     } catch (err) {
-      setError('Registration failed.');
+      setError(err.message || 'Registration failed.');
     }
   };
 
@@ -154,15 +168,25 @@ const Register = () => {
               />
             )}
 
-            <TextField
-              required
-              fullWidth
-              label={t('Email Address')}
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-            />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                required
+                fullWidth
+                label="Username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+              />
+              <TextField
+                required
+                fullWidth
+                label={t('Email Address')}
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </Stack>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField
