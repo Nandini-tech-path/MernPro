@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Box, Toolbar } from '@mui/material';
+import { Box, Toolbar, Typography } from '@mui/material';
+import axios from 'axios';
 
 import theme from './theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -24,7 +25,20 @@ import SubmitReport from './pages/SubmitReport';
 // Main Layout Component
 const AppLayout = ({ children }) => {
   const { user } = useAuth();
-  
+  const [schoolName, setSchoolName] = useState(SCHOOL_NAME_DEFAULT);
+
+  useEffect(() => {
+    const fetchSchoolName = async () => {
+      try {
+        const response = await axios.get('/api/admin/public/school');
+        setSchoolName(response.data.name);
+      } catch (error) {
+        console.error('Error fetching school name:', error);
+      }
+    };
+    fetchSchoolName();
+  }, []);
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
       <Navbar />

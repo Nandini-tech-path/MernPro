@@ -1,12 +1,36 @@
-import React from 'react';
-import { Box, Typography, Grid, Paper, Card, CardContent } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Grid, Paper, Card, CardContent, TextField, Button } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import PeopleIcon from '@mui/icons-material/People';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const [schoolName, setSchoolName] = useState('');
+
+  useEffect(() => {
+    const fetchSchoolName = async () => {
+      try {
+        const response = await axios.get('/api/admin/public/school');
+        setSchoolName(response.data.name);
+      } catch (error) {
+        console.error('Error fetching school name:', error);
+      }
+    };
+    fetchSchoolName();
+  }, []);
+
+  const handleSaveSchoolName = async () => {
+    try {
+      await axios.post('/api/admin/school', { name: schoolName });
+      alert('School name updated successfully!');
+    } catch (error) {
+      console.error('Error saving school name:', error);
+      alert('Failed to update school name.');
+    }
+  };
 
   const stats = [
     { title: 'Total Teachers', value: '24', icon: <PeopleIcon fontSize="large" color="primary" />, color: '#E0E7FF' },
@@ -39,6 +63,22 @@ const AdminDashboard = () => {
           </Grid>
         ))}
       </Grid>
+      
+      <Box sx={{ mt: 6 }}>
+        <Paper sx={{ p: 4, borderRadius: 4, elevation: 1 }}>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>School Settings</Typography>
+          <TextField
+            label="School Name"
+            value={schoolName}
+            onChange={(e) => setSchoolName(e.target.value)}
+            fullWidth
+            sx={{ mb: 2 }}
+          />
+          <Button variant="contained" onClick={handleSaveSchoolName}>
+            Save School Name
+          </Button>
+        </Paper>
+      </Box>
       
       <Box sx={{ mt: 6 }}>
         <Paper sx={{ p: 4, borderRadius: 4, elevation: 1 }}>
